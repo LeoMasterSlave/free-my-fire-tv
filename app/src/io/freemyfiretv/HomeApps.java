@@ -264,9 +264,14 @@ final class HomeApps {
     }
 
     /** The top buttons, ready to draw (0 to 3 of them). */
-    static List<Item> topButtons() {
+    static List<Item> topButtons(Context c) {
         List<Item> items = new ArrayList<>();
-        for (String key : topButtonKeys()) items.add(topButton(key));
+        for (String key : topButtonKeys()) {
+            // Fire TV Stick: no tuner and no HDMI inputs, so those two buttons would open nothing.
+            if (HomeMode.AMAZON && key.equals(TOP_LIVE) && liveTv(c) == null) continue;
+            if (HomeMode.AMAZON && key.equals(TOP_INPUTS) && inputs(c, true).isEmpty()) continue;
+            items.add(topButton(key));
+        }
         return items;
     }
 
@@ -589,7 +594,8 @@ final class HomeApps {
                 intent = new Intent().setComponent(new ComponentName(a, SettingsActivity.class));
                 break;
             case ANDROID_SETTINGS:
-                intent = new Intent(Settings.ACTION_SETTINGS);
+                intent = HomeMode.AMAZON ? fireSettings(a) : null;
+                if (intent == null) intent = new Intent(Settings.ACTION_SETTINGS);
                 // Where nothing answers it, Android TV's own settings by name: on the HY300 Pro+ the stock home
                 // (com.htc.magcubicos) is the one that does, and Free My Fire TV mode turns it off (#379).
                 plain = new Intent().setComponent(new ComponentName("com.android.tv.settings", "com.android.tv.settings.MainSettings"));
@@ -619,6 +625,24 @@ final class HomeApps {
                 return false;
             }
         }
+    }
+
+    /** Fire OS's own settings app, by name (the generic request can land on a stub that closes at once); null if none. */
+    private static final String[][] FIRE_SETTINGS = {
+            {"com.amazon.tv.settings.v2", "com.amazon.tv.settings.v2.tv.TvSettingsActivity"},
+            {"com.amazon.tv.settings", "com.amazon.tv.settings.tv.TvSettingsActivity"},
+    };
+
+    private static Intent fireSettings(Context c) {
+        for (String[] s : FIRE_SETTINGS) {
+            ComponentName name = new ComponentName(s[0], s[1]);
+            if (exists(c, name)) {
+                AppLog.w("Fire TV settings: " + name.flattenToShortString());
+                return new Intent().setComponent(name);
+            }
+        }
+        AppLog.w("Fire TV settings: none of the known activities is installed; using android.settings.SETTINGS");
+        return null;
     }
 
     /**

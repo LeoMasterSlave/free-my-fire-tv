@@ -178,7 +178,8 @@ final class FireHome {
         for (ComponentName h : homes) {
             try {
                 c.startActivity(new Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME).setComponent(h)
-                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED));
+                AppLog.w("Amazon Home: started " + h.flattenToShortString());
                 return true;
             } catch (ActivityNotFoundException | SecurityException e) {
                 AppLog.w("couldn't open " + h.flattenToShortString() + ": " + e.getMessage());
