@@ -41,6 +41,7 @@ public class HomeRedirectService extends AccessibilityService {
             receiving = true;
         }
         AppLog.w("Home button service connected");
+        bootStart();
     }
 
     @Override public boolean onUnbind(Intent intent) {
@@ -53,6 +54,21 @@ public class HomeRedirectService extends AccessibilityService {
     @Override public void onDestroy() {
         unregister();
         super.onDestroy();
+    }
+
+    /** Just after the TV started: open our home screen without waiting for the Home button. Once per service start. */
+    private void bootStart() {
+        long now = System.currentTimeMillis();
+        if (!RedirectPolicy.startAtBoot(android.os.SystemClock.elapsedRealtime(), FireHome.wanted(this), now,
+                FireHome.userPausedUntil(this))) {
+            return;
+        }
+        try {
+            startActivity(new Intent(this, FireHomeActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            AppLog.w("Home button service: opened our home screen after the TV started");
+        } catch (RuntimeException e) {
+            AppLog.w("couldn't open our home screen after the TV started: " + e);
+        }
     }
 
     private void unregister() {

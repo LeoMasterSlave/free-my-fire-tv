@@ -93,6 +93,18 @@ final class RedirectPolicy {
         return Verdict.REDIRECT;
     }
 
+    /** The service connects this soon after the TV started: it came up with the system (a boot), not later. */
+    static final long BOOT_WINDOW_MS = 180_000;
+
+    /**
+     * Whether the service should open our home screen as soon as it connects: only right after the TV started, so the
+     * stick comes up on it even when it connected before Amazon's home showed (that one is then redirected as usual).
+     * Never when the person turned the redirect off or paused it.
+     */
+    static boolean startAtBoot(long uptimeMs, boolean enabled, long now, long userPausedUntil) {
+        return enabled && uptimeMs >= 0 && uptimeMs < BOOT_WINDOW_MS && now >= userPausedUntil;
+    }
+
     /** When the escape or the loop breaker lets redirecting go on (0 when it isn't paused by them). */
     long pausedUntil() {
         return pausedUntil;

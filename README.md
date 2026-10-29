@@ -6,9 +6,11 @@ apps, film and show picks, weather, clock and wallpapers, with no sponsored rows
 remote-control feel.
 
 > **Read this first: status.** The app builds from source with GitHub Actions, and its decision logic is unit-tested.
-> **Nothing has yet been tested on a physical Fire TV Stick.** Whether the Home button can be redirected on your stick
-> is exactly what is unverified, and it depends on Fire OS. If it does not work, Free My Fire TV still works as an app
-> you launch yourself. The list of what needs a real stick is in [docs/DEVICE-TESTS.md](docs/DEVICE-TESTS.md).
+> **Tested on one device so far:** a Fire TV Stick on Fire OS 7.7.1.7 (reported by its owner): the home screen runs
+> smoothly and the Home button redirect works, with Amazon's home showing for about a second first. Other models and
+> Fire OS 8 are untested, and opening Free My Fire TV at power-on is new in 0.1.1 and still to be confirmed. If the
+> redirect does not work on your stick, the app still works as one you launch yourself. What still needs a real stick
+> is listed in [docs/DEVICE-TESTS.md](docs/DEVICE-TESTS.md).
 
 Italiano: [README.it.md](README.it.md)
 
@@ -64,8 +66,11 @@ is not guaranteed**; that is verified only by the result shown on the TV.
 
 ## Limitations
 
-- **Unverified on real hardware** (see top). Behaviour of Amazon's launcher windows is assumed, not observed.
-- **Fire OS 7** holds back apps started in the background: the redirect can show about 5 seconds late.
+- **Little real-hardware testing** (see top): one Fire OS 7 stick so far.
+- **Fire OS 7** holds back apps started in the background. On Fire OS 7.7.1.7 the redirect took about 1 second; other
+  versions may be slower (up to about 5 seconds).
+- **At power-on** Amazon's launcher always starts first; since 0.1.1 the service also opens Free My Fire TV when it
+  connects within 3 minutes of the TV starting, so Amazon's home may still show briefly. Not yet confirmed on a stick.
 - **Fire OS 8** may flash Amazon's home for a moment before Free My Fire TV appears.
 - If Amazon's home is already in front when you start the service, nothing happens until the next time it arrives.
 - Press **Home twice quickly** to reach Amazon's home (redirect pauses for 20 s). If Free My Fire TV ever fails to stay

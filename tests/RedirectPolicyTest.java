@@ -78,6 +78,12 @@ public final class RedirectPolicyTest {
         eq(false, RedirectPolicy.lists(null, ours), "no setting");
         eq(null, RedirectPolicy.merge("bad entry;rm -rf", ours, true), "an odd entry is never rewritten");
 
+        // Opening our home right after the TV started: only then, and only when wanted and not paused.
+        eq(true, RedirectPolicy.startAtBoot(30_000, true, 1_000, 0), "just after boot");
+        eq(false, RedirectPolicy.startAtBoot(RedirectPolicy.BOOT_WINDOW_MS + 1, true, 1_000, 0), "long after boot");
+        eq(false, RedirectPolicy.startAtBoot(30_000, false, 1_000, 0), "switch off");
+        eq(false, RedirectPolicy.startAtBoot(30_000, true, 1_000, 5_000), "paused by the person");
+
         System.out.println("RedirectPolicyTest: " + checks + " checks passed");
     }
 }

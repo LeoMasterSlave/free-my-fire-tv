@@ -1,6 +1,17 @@
 # Tests that need a physical Fire TV Stick
 
-None of these has been run yet. Until they are, **nothing here counts as working**. Log with
+Results so far come from one device: a Fire TV Stick on **Fire OS 7.7.1.7** (reported by its owner, who answered in
+words, not logs). Anything not listed under "Results" below has **not** been run and does not count as working.
+
+## Results
+- Fire OS 7.7.1.7 (Fire TV Stick, exact model not recorded): A1 install OK; A2/A3 home opens and is smooth; B1/B3 setup
+  ends in *Working*; Home from an app opens Free My Fire TV after about 1 s, with Amazon's home visible first.
+  The owner also reported the other checks asked for (power-cycle, Back from an app, double Home) "work", without
+  details: treat those as unconfirmed until logs or specifics are added.
+- Power-on straight into Free My Fire TV (0.1.1, `HomeRedirectService.bootStart`): to be tested.
+- Fire OS 8: not tested.
+
+Original list: Log with
 `adb logcat -s FreeMyFireTV` (the redirect logs `Amazon home arrived (...): VERDICT`). Please report results as: model,
 Fire OS version (Settings > My Fire TV > About), what you saw.
 
@@ -31,7 +42,7 @@ nothing newer than API 28). The full APK build is first run by GitHub Actions.
 - [ ] B7 Does Fire OS block the background `startActivity` from the service (log: "couldn't start Free My Fire TV's home
   screen")? If so, record it: the app then stays a manual launcher.
 - [ ] B8 Loop protection: if ours does not stay up, redirects stop (4 in 10 s, then 1 minute pause).
-- [ ] B9 Reboot the stick: is the service still enabled and working? After `adb install -r` of a new version: is it
+- [ ] B9 Reboot the stick (0.1.1: does our home show by itself within a few seconds of Amazon's? how long?): is the service still enabled and working? After `adb install -r` of a new version: is it
   re-enabled by the app (repair), or do you need to run Set up again?
 - [ ] B10 Alexa voice / long-press Home / Settings key shortcuts still behave as Amazon intended.
 - [ ] B11 Kids profile / a second profile: behaviour.

@@ -6,10 +6,11 @@ preferite, film e serie consigliati, meteo, orologio e sfondi, senza righe spons
 uso con il telecomando.
 
 > **Stato, da leggere subito.** L'app si compila da sorgente con GitHub Actions e la logica di decisione è coperta da
-> test automatici. **Nulla è stato ancora provato su una Fire TV Stick fisica.** Che il tasto Home possa essere
-> reindirizzato sulla tua chiavetta non è verificato e dipende da Fire OS. Se non funziona, Free My Fire TV resta
-> utilizzabile come app che avvii tu. L'elenco dei test che richiedono una chiavetta vera è in
-> [docs/DEVICE-TESTS.md](docs/DEVICE-TESTS.md).
+> test automatici. **Provata finora su un solo dispositivo:** una Fire TV Stick con Fire OS 7.7.1.7 (segnalato dal
+> proprietario): la Home gira fluida e il reindirizzamento del tasto Home funziona, con la Home di Amazon visibile per
+> circa un secondo prima. Altri modelli e Fire OS 8 non sono provati, e l'apertura all'accensione è nuova nella 0.1.1
+> e ancora da confermare. Se il reindirizzamento non funziona sulla tua chiavetta, l'app resta utilizzabile come app che
+> avvii tu. Cosa serve ancora provare è in [docs/DEVICE-TESTS.md](docs/DEVICE-TESTS.md).
 
 English: [README.md](README.md)
 
@@ -65,9 +66,12 @@ ADB bastino sulla tua versione di Fire OS**: lo dice solo il risultato mostrato 
 
 ## Limiti
 
-- **Non verificato su hardware reale** (vedi sopra). Il comportamento delle finestre del launcher Amazon è supposto,
-  non osservato.
-- **Fire OS 7** ritarda le app avviate in background: il reindirizzamento può comparire con circa 5 secondi di ritardo.
+- **Poche prove su hardware reale** (vedi sopra): finora una sola chiavetta con Fire OS 7.
+- **Fire OS 7** ritarda le app avviate in background. Su Fire OS 7.7.1.7 il reindirizzamento ha richiesto circa 1
+  secondo; altre versioni possono essere più lente (fino a circa 5 secondi).
+- **All'accensione** parte sempre prima il launcher di Amazon; dalla 0.1.1 il servizio apre anche Free My Fire TV
+  quando si collega entro 3 minuti dall'avvio della TV, quindi la Home di Amazon può comparire ancora per un attimo.
+  Non ancora confermato su una chiavetta.
 - **Fire OS 8** può mostrare per un attimo la Home di Amazon prima di Free My Fire TV.
 - Se la Home di Amazon è già in primo piano quando avvii il servizio, non succede nulla fino al prossimo arrivo.
 - **Premi Home due volte velocemente** per andare alla Home di Amazon (il reindirizzamento si ferma 20 s). Se Free My
