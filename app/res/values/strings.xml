@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Free My Fire TV</string>
+    <string name="remote_key_service">Lets the app buttons on the remote (Netflix, YouTube, Prime Video, TCL Channel) open the apps you picked in Free My Fire TV, from any app. It only reads those buttons.</string>
+    <string name="home_redirect_service">Lets the Home button on the remote open Free My Fire TV instead of Amazon\'s home screen. It only notices which screen comes to the front: it doesn\'t read the screen or the keys. Turn it off here, or with Restore Amazon Home in Free My Fire TV.</string>
+</resources>

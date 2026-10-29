@@ -1,0 +1,140 @@
+# Builds FreeMyFireTV.apk with the official Android SDK (no Gradle, no third-party build actions), keeps it as a
+# downloadable artifact, and on a version tag (v0.1.0, ...) publishes it as a GitHub release.
+# First build and signing key: docs/FIRST-BUILD.md. No key is ever stored in the repository.
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      # Repository secrets (Settings > Secrets and variables > Actions). Pull requests from forks never get them.
+      KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      FREEMYFIRETV_KEYSTORE_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      FREEMYFIRETV_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      FREEMYFIRETV_KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+    outputs:
+      release-key: ${{ steps.sign.outputs.release-key }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Install the Android SDK (official command-line tools)
+        run: |
+          set -euo pipefail
+          SDK="$RUNNER_TEMP/android-sdk"
+          mkdir -p "$SDK"
+          # GitHub's runner image ships Google's command-line tools; if a future image doesn't, download them from Google.
+          TOOLS="${ANDROID_HOME:-/usr/local/lib/android/sdk}/cmdline-tools/latest/bin"
+          if [ ! -x "$TOOLS/sdkmanager" ]; then
+            curl -fsSL -o "$RUNNER_TEMP/cmdline-tools.zip" https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+            unzip -q "$RUNNER_TEMP/cmdline-tools.zip" -d "$RUNNER_TEMP/cmdline-tools"
+            TOOLS="$RUNNER_TEMP/cmdline-tools/cmdline-tools/bin"
+          fi
+          yes | "$TOOLS/sdkmanager" --sdk_root="$SDK" --licenses > /dev/null || true
+          "$TOOLS/sdkmanager" --sdk_root="$SDK" "build-tools;34.0.0" "platforms;android-34"
+          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
+
+      - name: Checks (translations, Home redirect rules)
+        run: tools/check.sh tests
+
+      - name: Signing key
+        id: sign
+        run: |
+          set -euo pipefail
+          if [ -n "${KEYSTORE_B64:-}" ] && [ -n "${FREEMYFIRETV_KEYSTORE_PASS:-}" ]; then
+            printf '%s' "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+            echo "FREEMYFIRETV_KEYSTORE=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
+            echo "release-key=true" >> "$GITHUB_OUTPUT"
+            echo "Signing with the project's release key (from repository secrets)."
+          else
+            echo "FREEMYFIRETV_TEMP_KEY=1" >> "$GITHUB_ENV"
+            echo "release-key=false" >> "$GITHUB_OUTPUT"
+            {
+              echo "### :warning: Temporary signing key"
+              echo "No release key is configured (secrets \`ANDROID_KEYSTORE_BASE64\` and \`ANDROID_KEYSTORE_PASSWORD\`)."
+              echo "This APK installs on a Fire TV, but it is signed with a throwaway key: a build from another run **cannot update it**"
+              echo "(uninstall first). Set the secrets once, see docs/FIRST-BUILD.md."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Build
+        run: |
+          set -euo pipefail
+          ./build.sh --generic 2>&1 | tee "$RUNNER_TEMP/build.log"
+          grep -q '^Built FreeMyFireTV.apk' "$RUNNER_TEMP/build.log"
+
+      - name: Verify the APK
+        run: |
+          set -euo pipefail
+          BT="$ANDROID_HOME/build-tools/34.0.0"
+          "$BT/apksigner" verify --verbose --print-certs FreeMyFireTV.apk | tee "$RUNNER_TEMP/certs.txt"
+          "$BT/aapt2" dump badging FreeMyFireTV.apk > "$RUNNER_TEMP/badging.txt"
+          grep -q "^package: name='io.freemyfiretv'" "$RUNNER_TEMP/badging.txt"
+          grep -q "^sdkVersion:'26'" "$RUNNER_TEMP/badging.txt"
+          grep -q "android.permission.WRITE_SECURE_SETTINGS" "$RUNNER_TEMP/badging.txt"
+          # Nothing that would let the APK install other software or run as root.
+          ! grep -q "REQUEST_INSTALL_PACKAGES" "$RUNNER_TEMP/badging.txt"
+          sha256sum FreeMyFireTV.apk | tee SHA256SUMS
+          {
+            echo "### FreeMyFireTV.apk"
+            echo '```'
+            sha256sum FreeMyFireTV.apk
+            grep -E "^Signer #1 certificate SHA-256" "$RUNNER_TEMP/certs.txt" || true
+            grep -E "^(package|sdkVersion|targetSdkVersion):" "$RUNNER_TEMP/badging.txt"
+            echo '```'
+            echo "Install: \`adb connect <Fire TV IP>:5555\` then \`adb install -r FreeMyFireTV.apk\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FreeMyFireTV-apk
+          path: |
+            FreeMyFireTV.apk
+            SHA256SUMS
+          if-no-files-found: error
+          retention-days: 90
+
+  release:
+    # Only for a tag like v0.1.0, and only if the APK was signed with the real release key.
+    if: startsWith(github.ref, 'refs/tags/v') && needs.build.outputs.release-key == 'true'
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: FreeMyFireTV-apk
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            gh release upload "$TAG" FreeMyFireTV.apk SHA256SUMS --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$TAG" FreeMyFireTV.apk SHA256SUMS --repo "$GITHUB_REPOSITORY" \
+              --title "Free My Fire TV $TAG" --generate-notes \
+              --notes "Install with adb: \`adb install -r FreeMyFireTV.apk\`. See the README for setup, limits and how to restore Amazon's Home. Not yet tested on every Fire TV: see docs/DEVICE-TESTS.md."
+          fi

@@ -1,0 +1,14 @@
+# Your settings and signing key stay on your machine (and, in CI, in repository secrets): never commit them
+config.properties
+*.keystore
+*.jks
+*.idsig
+
+# Build output
+out/
+*.apk
+__pycache__/
+tools/.i18n-cache.json
+
+# macOS
+.DS_Store
