@@ -63,7 +63,7 @@ Known (Fire OS 7.7.1.7): `cmd package set-home-activity io.freemyfiretv/.HomeAct
 shows first when Home is pressed.
 
 ## E. Hide Amazon's Home (0.2.0, experimental)
-Known on Fire OS 7.7.1.7: `pm enable com.amazon.tv.launcher` -> `Cannot disable a protected package`. E1 is expected to fail there; the rest is for other versions.
+Known on Fire OS 7.7.1.7: `pm enable com.amazon.tv.launcher` -> `Cannot disable a protected package`. Also `adb shell pm hide com.amazon.tv.launcher` -> `SecurityException: Neither user 2000 nor current process has android.permission.MANAGE_USERS` (seen on a stick; nothing changed). So without root there is no way to remove Amazon's Home on this version. E1 is expected to fail there; the rest is for other versions.
 - [ ] E1 Settings > Home Button > Hide Amazon's Home: after two OKs, does it end with "Amazon's Home is off"? What does
   `adb shell pm list packages -d` show, and `adb shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME`?
 - [ ] E2 Press Home from an app: our home opens at once, Amazon's never shows.
