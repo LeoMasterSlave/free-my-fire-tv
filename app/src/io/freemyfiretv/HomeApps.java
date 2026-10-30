@@ -333,10 +333,12 @@ final class HomeApps {
         items.add(shortcut(ANDROID_SETTINGS, "tv-settings", Ui.tr("TV Settings"), "tv_settings"));
         // Fire TV: with the Home button redirected to this home screen, the way to Amazon's own is here (and in Settings).
         if (HomeMode.AMAZON && !FireReplace.active(c)) items.add(shortcut(AMAZON_HOME, "amazon-home", Ui.tr("Amazon Home"), "home"));
-        // Fire TV with Amazon's launcher turned off: its settings pages, opened by name (they are in Amazon's settings app).
-        if (HomeMode.AMAZON && FireReplace.active(c)) {
+        // Fire TV: Amazon's settings pages opened by name (they are in Amazon's settings app), so they can be reached
+        // without going through the grid inside Amazon's launcher. Not yet tried on a stick: if Fire OS refuses the
+        // start, the shortcut falls back to the normal TV Settings (see open()).
+        if (HomeMode.AMAZON) {
             String[][] pages = fireSettingsPages();
-            for (int i = 1; i < pages.length; i++) {
+            for (int i = FireReplace.active(c) ? 1 : 0; i < pages.length; i++) {
                 device(c, items, "fire-" + i, pages[i][0], "tv_settings", new Intent().setComponent(fireSettingsPage(pages[i][1])));
             }
         }
@@ -634,6 +636,11 @@ final class HomeApps {
             case DEVICE:
                 // A fresh task: else Back walks through whatever the maker's settings app had open before
                 intent = new Intent(it.intent).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                if (HomeMode.AMAZON && it.intent.getComponent() != null
+                        && "com.amazon.tv.settings.v2".equals(it.intent.getComponent().getPackageName())) {
+                    FireHome.pauseFor(a, FireHome.SETTINGS_PAUSE_MS);
+                    plain = new Intent(Settings.ACTION_SETTINGS);
+                }
                 break;
             default:
                 return false;
