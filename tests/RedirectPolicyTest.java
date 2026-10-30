@@ -78,6 +78,24 @@ public final class RedirectPolicyTest {
         eq(false, RedirectPolicy.lists(null, ours), "no setting");
         eq(null, RedirectPolicy.merge("bad entry;rm -rf", ours, true), "an odd entry is never rewritten");
 
+        // Amazon's settings session: starts with the pause (TV Settings button), keeps the redirect off while the person
+        // moves around Amazon's settings, ends at the first window that isn't Amazon's.
+        final String SET = "com.amazon.tv.settings.v2";
+        Verdict v;
+        p = new RedirectPolicy();
+        p.onWindow(0, APP, false, false, true, 0, RedirectPolicy.Kind.OTHER);
+        p.onWindow(1_000, SET, false, false, true, 16_000, RedirectPolicy.Kind.SETTINGS);   // pause running: session starts
+        p.onWindow(30_000, SET, false, false, true, 16_000, RedirectPolicy.Kind.SETTINGS);  // a page, long after the pause
+        eq(Verdict.PAUSED, p.onWindow(40_000, LAUNCHER, true, false, true, 16_000, RedirectPolicy.Kind.SYSTEM), "back to the grid");
+        p.onWindow(50_000, OURS, false, true, true, 16_000, RedirectPolicy.Kind.OTHER);      // our home: session over
+        eq(Verdict.REDIRECT, p.onWindow(60_000, LAUNCHER, true, false, true, 16_000, RedirectPolicy.Kind.SYSTEM), "redirect works again");
+
+        // Without the TV Settings button's pause, Amazon's settings windows don't start a session.
+        p = new RedirectPolicy();
+        p.onWindow(0, APP, false, false, true, 0, RedirectPolicy.Kind.OTHER);
+        p.onWindow(1_000, SET, false, false, true, 0, RedirectPolicy.Kind.SETTINGS);
+        eq(Verdict.REDIRECT, p.onWindow(40_000, LAUNCHER, true, false, true, 0, RedirectPolicy.Kind.SYSTEM), "no session without the pause");
+
         // Opening our home right after the TV started: only then, and only when wanted and not paused.
         eq(true, RedirectPolicy.startAtBoot(30_000, true, 1_000, 0), "just after boot");
         eq(false, RedirectPolicy.startAtBoot(RedirectPolicy.BOOT_WINDOW_MS + 1, true, 1_000, 0), "long after boot");

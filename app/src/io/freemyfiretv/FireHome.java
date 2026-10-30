@@ -157,6 +157,21 @@ final class FireHome {
         return out;
     }
 
+    /**
+     * Amazon's settings live in its launcher (…launcher/.ui.SettingsActivity, then pages of com.amazon.tv.settings.*):
+     * those windows are SETTINGS, other Amazon/Android system windows are SYSTEM, anything else is OTHER.
+     */
+    static RedirectPolicy.Kind kindOf(String pkg, CharSequence cls, boolean amazonHome) {
+        String c = cls == null ? "" : cls.toString();
+        if (pkg.startsWith("com.amazon.tv.settings") || pkg.equals("com.android.settings") || c.endsWith(".SettingsActivity")) {
+            return RedirectPolicy.Kind.SETTINGS;
+        }
+        if (amazonHome || pkg.startsWith("com.amazon.") || pkg.equals("android") || pkg.equals("com.android.systemui")) {
+            return RedirectPolicy.Kind.SYSTEM;
+        }
+        return RedirectPolicy.Kind.OTHER;
+    }
+
     /** Whether a window (package, class) is one of `homes`: same package, and its activity class (or a "Home" one). */
     static boolean isAmazonHome(List<ComponentName> homes, String pkg, CharSequence cls) {
         if (pkg == null || cls == null) return false;

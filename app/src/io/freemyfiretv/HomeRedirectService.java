@@ -102,8 +102,9 @@ public class HomeRedirectService extends AccessibilityService {
         }
         boolean amazonHome = FireHome.isAmazonHome(homes, pkg, cls);
         boolean ours = pkg.equals(getPackageName());
+        RedirectPolicy.Kind kind = FireHome.kindOf(pkg, cls, amazonHome);
         RedirectPolicy.Verdict verdict = policy.onWindow(now, pkg, amazonHome, ours, FireHome.wanted(this),
-                FireHome.userPausedUntil(this));
+                FireHome.userPausedUntil(this), kind);
         if (verdict == RedirectPolicy.Verdict.IGNORE) return;
 
         boolean go = verdict == RedirectPolicy.Verdict.REDIRECT;

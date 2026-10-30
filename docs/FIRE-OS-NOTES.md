@@ -38,7 +38,9 @@ Facts below are marked **checked** (done here, no device needed) or **assumed** 
 - `android.settings.SETTINGS` resolves to `com.amazon.tv.launcher/.ui.SettingsActivity`; Amazon's settings screen has
   `HomeActivity_vNext` focused. Opening it from our home therefore looked like Amazon's home arriving and the
   redirect sent the person back: "TV Settings" now pauses the redirect for 15 s first (`FireHome.SETTINGS_PAUSE_MS`).
-- The stick has no tuner and no HDMI inputs: the Live TV and HDMI Inputs top buttons are hidden there.
+  Since 0.1.4 that pause starts a *settings session* (`RedirectPolicy.Kind`): while Amazon's settings windows keep
+  appearing the redirect stays off (up to 30 min), and it ends at the first window that isn't Amazon's (our home, an app).
+- The stick has no tuner and no HDMI inputs (the owner uses it on a monitor): the Live TV and HDMI Inputs buttons are hidden when there is no tuner input and no HDMI input (`HomeApps.liveTv`, `topButtons`). Amazon's Live TV app is installed anyway, so its presence is not a test.
 - Installed settings packages include `com.amazon.tv.settings.v2` and a stub `com.android.settings`.
 
 ## Differences from Android TV (Free My TV)

@@ -662,6 +662,8 @@ final class HomeApps {
         // Fire TV: the antenna (digital terrestrial) entry of Amazon's Live TV, which plays the antenna's channels or
         // opens the channel scan when there are none yet. The channels request would also offer Vewd's HbbTV player,
         // and Live TV on its own plays the last channel, which can be an app's (RaiPlay's).
+        // A Fire TV Stick has Amazon's Live TV app but no tuner and no HDMI input: its tile would open nothing useful.
+        if (HomeMode.AMAZON && tunerInput(c) == null && inputs(c, true).isEmpty()) return null;
         if (HomeMode.AMAZON) {
             ComponentName dtt = new ComponentName("com.amazon.tv.livetv", "com.amazon.tv.livetv.DttIconWrapperActivity");
             // exists(), not resolveActivity: that hands an explicit component back without looking (the sticks have none)

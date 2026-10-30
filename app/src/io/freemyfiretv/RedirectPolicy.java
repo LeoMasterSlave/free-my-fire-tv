@@ -58,13 +58,32 @@ final class RedirectPolicy {
      * @param userPausedUntil the person's own pause (same clock as `now`), 0 for none
      */
     Verdict onWindow(long now, String pkg, boolean amazonHome, boolean ours, boolean enabled, long userPausedUntil) {
+        return onWindow(now, pkg, amazonHome, ours, enabled, userPausedUntil, Kind.OTHER);
+    }
+
+    /** What a window is, for the settings session: Amazon's settings, a neutral system window, or anything else. */
+    enum Kind { SETTINGS, SYSTEM, OTHER }
+
+    static final long SETTINGS_SESSION_MS = 30 * 60_000;
+    private long settingsUntil;   // while Amazon's settings are in use: the redirect stays off
+
+    /**
+     * @param kind SETTINGS for Amazon's settings windows, SYSTEM for other Amazon/Android system windows (they neither
+     *             start nor end a settings session), OTHER for everything else (our home, an app: ends the session)
+     */
+    Verdict onWindow(long now, String pkg, boolean amazonHome, boolean ours, boolean enabled, long userPausedUntil,
+                     Kind kind) {
         if (pkg == null) pkg = "";
+        // A settings session starts when Amazon's settings show up while the person's pause is running (the TV Settings
+        // button sets it), lasts while they navigate Amazon's settings, and ends at the first window that isn't Amazon's.
+        if (kind == Kind.SETTINGS && (now < userPausedUntil || now < settingsUntil)) settingsUntil = now + SETTINGS_SESSION_MS;
+        else if (kind == Kind.OTHER || ours) settingsUntil = 0;
         boolean arrival = amazonHome && !pkg.equals(lastPackage);
         lastPackage = pkg;
         if (ours && redirected) oursSeen = true;
         if (!arrival) return Verdict.IGNORE;
         if (!enabled) return Verdict.DISABLED;
-        if (now < userPausedUntil || now < pausedUntil) return Verdict.PAUSED;
+        if (now < userPausedUntil || now < pausedUntil || now < settingsUntil) return Verdict.PAUSED;
 
         if (redirected && now - lastRedirectAt < ESCAPE_WINDOW_MS) {
             if (oursSeen) {
