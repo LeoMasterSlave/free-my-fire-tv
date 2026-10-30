@@ -33,6 +33,14 @@ Facts below are marked **checked** (done here, no device needed) or **assumed** 
   works through the stick's own ADB loopback.
 - Fire OS 7 delays apps started from the Home button (app-switch lock): expected ~5 s lag. Fire OS 8 does not.
 
+## Observed on a real stick (Fire OS 7.7.1.7)
+- Amazon's home window: `com.amazon.tv.launcher/com.amazon.tv.launcher.ui.HomeActivity_vNext` (matches `isAmazonHome`).
+- `android.settings.SETTINGS` resolves to `com.amazon.tv.launcher/.ui.SettingsActivity`; Amazon's settings screen has
+  `HomeActivity_vNext` focused. Opening it from our home therefore looked like Amazon's home arriving and the
+  redirect sent the person back: "TV Settings" now pauses the redirect for 15 s first (`FireHome.SETTINGS_PAUSE_MS`).
+- The stick has no tuner and no HDMI inputs: the Live TV and HDMI Inputs top buttons are hidden there.
+- Installed settings packages include `com.amazon.tv.settings.v2` and a stub `com.android.settings`.
+
 ## Differences from Android TV (Free My TV)
 - No "replace the home screen" mode, no disabling apps, no Continue Watching (needs the TV's ADB), no Now Playing listener,
   no remote-button service, no self-updater. Those rows show *Unavailable*.

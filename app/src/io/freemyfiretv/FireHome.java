@@ -123,9 +123,13 @@ final class FireHome {
         return read(c, "fire-home.json").optLong("pausedUntil", 0);
     }
 
+    /** How long the redirect waits while Amazon's settings open (they live inside Amazon's launcher). */
+    static final long SETTINGS_PAUSE_MS = 15_000;
+
+    /** Pauses the redirect for `ms`; never shortens a longer pause already running. */
     static void pauseFor(Context c, long ms) {
         JSONObject o = read(c, "fire-home.json");
-        put(o, "pausedUntil", System.currentTimeMillis() + ms);
+        put(o, "pausedUntil", Math.max(o.optLong("pausedUntil", 0), System.currentTimeMillis() + ms));
         write(c, "fire-home.json", o);
     }
 
