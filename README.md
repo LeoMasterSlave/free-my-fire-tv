@@ -83,6 +83,26 @@ is not guaranteed**; that is verified only by the result shown on the TV.
   and you had set it up (check after updating).
 - Profiles/kids profiles, and apps that cover the screen, may behave differently. Report what you see.
 
+## Hide Amazon's Home (experimental, optional)
+
+Settings > Home Button > **Hide Amazon's Home (experimental)** (press OK twice) turns Amazon's launcher **off, not
+removed** (`pm disable-user com.amazon.tv.launcher` through the TV's own ADB) and makes Free My Fire TV the Home. The Home
+button and power-on then open only Free My Fire TV. Checked afterwards; if the checks fail everything is put back.
+
+What it means:
+- **Reversible:** Settings > Home Button > *Bring Amazon's Home back* (or *Restore Amazon Home*), or from a computer
+  `adb shell pm enable com.amazon.tv.launcher`; uninstalling the app also hands Home back once the launcher is enabled.
+  After 3 crashes in 5 minutes the app turns Amazon's launcher back on by itself.
+- **Amazon's settings screen lives in its launcher**, so it goes away too: *TV Settings* opens Amazon's settings app pages
+  directly instead, and the drawer gets shortcuts to Network, Display & Sounds, Apps, Controllers & Bluetooth,
+  Preferences and Accessibility. Quick settings, Alexa from the Home screen and anything else tied to the launcher may stop
+  working. **Unverified beyond what is in docs/DEVICE-TESTS.md.**
+- A Fire OS update or a reboot may turn the launcher back on; then Amazon's home can show again.
+- If the app's home screen can't start and Amazon's launcher is off, the TV may show nothing until you run the command
+  above from a computer (it needs the stick on the network). Keep that command at hand before you try this.
+- It goes against the usual rule of this project (nothing of Amazon's is switched off): it exists only because the owner
+  asked for it, and is off unless you turn it on.
+
 ## Restore Amazon's Home (always possible)
 
 - **On the TV:** Settings > Home Button > **Restore Amazon Home**. It switches the service off and removes it from the

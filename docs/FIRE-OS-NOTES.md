@@ -43,6 +43,13 @@ Facts below are marked **checked** (done here, no device needed) or **assumed** 
 - The stick has no tuner and no HDMI inputs (the owner uses it on a monitor): the Live TV and HDMI Inputs buttons are hidden when there is no tuner input and no HDMI input (`HomeApps.liveTv`, `topButtons`). Amazon's Live TV app is installed anyway, so its presence is not a test.
 - Installed settings packages include `com.amazon.tv.settings.v2` and a stub `com.android.settings`.
 
+## Hide Amazon's Home (0.2.0)
+`FireReplace` runs, through the TV's own ADB: `cmd package set-home-activity io.freemyfiretv/.HomeActivity` (must answer
+"Success"), writes the way back to `fire-replace.json`, `pm disable-user --user 0 com.amazon.tv.launcher`, then checks
+that the launcher is listed disabled (`pm list packages -d`) and that HOME resolves to this app, else undoes everything.
+Undo = `pm enable` + `set-home-activity <recorded original home>`. Amazon's settings pages are listed from the stick's
+own dump of `com.amazon.tv.settings.v2` (DeviceActivity, NetworkActivity, ...). **Not yet tried on a stick.**
+
 ## Differences from Android TV (Free My TV)
 - No "replace the home screen" mode, no disabling apps, no Continue Watching (needs the TV's ADB), no Now Playing listener,
   no remote-button service, no self-updater. Those rows show *Unavailable*.

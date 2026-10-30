@@ -22,7 +22,7 @@ import java.nio.charset.StandardCharsets;
 public class ModeJob extends JobService {
     static final String APPLY = "apply", VERIFY = "verify", REVERT = "revert", MEMORY = "memory", REMOTE = "remote",
             PLAYING = "playing", UPDATE = "update", INSTALL = "install", GRANT_WATCH = "watchGrant",
-            REVOKE_WATCH = "watchRevoke", FIRE_SETUP = "fireSetup", FIRE_RESTORE = "fireRestore";   // job ids come from these names: keep them apart
+            REVOKE_WATCH = "watchRevoke", FIRE_SETUP = "fireSetup", FIRE_RESTORE = "fireRestore", FIRE_REPLACE = "fireReplace";   // job ids come from these names: keep them apart
 
     @Override public boolean onStartJob(JobParameters params) {
         PersistableBundle extras = params.getExtras();
@@ -47,6 +47,7 @@ public class ModeJob extends JobService {
                     case REVOKE_WATCH: HomeMode.revokeWatchNow(app); break;
                     case FIRE_SETUP: FireHome.setupNow(app); break;
                     case FIRE_RESTORE: FireHome.restoreNow(app); break;
+                    case FIRE_REPLACE: FireReplace.enableNow(app); break;
                     default: break;
                 }
             } catch (Throwable t) {

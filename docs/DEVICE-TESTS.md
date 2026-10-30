@@ -54,6 +54,16 @@ nothing newer than API 28). The full APK build is first run by GitHub Actions.
 - [ ] C3 `adb uninstall io.freemyfiretv` leaves the stick as before (no accessibility entry, Home is Amazon's).
 - [ ] C4 No `com.amazon.*` package was disabled: `adb shell pm list packages -d` is unchanged.
 
+## E. Hide Amazon's Home (0.2.0, experimental): all untested
+- [ ] E1 Settings > Home Button > Hide Amazon's Home: after two OKs, does it end with "Amazon's Home is off"? What does
+  `adb shell pm list packages -d` show, and `adb shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME`?
+- [ ] E2 Press Home from an app: our home opens at once, Amazon's never shows.
+- [ ] E3 Power-cycle: does the stick come up straight into our home?
+- [ ] E4 TV Settings (My Fire TV) and the drawer shortcuts (Network, Display & Sounds, Apps...) open and work; what else
+  is broken (quick settings, notifications, Alexa/voice button, Back from apps)?
+- [ ] E5 Bring Amazon's Home back (Settings, and manual `adb shell pm enable com.amazon.tv.launcher`): Home is Amazon's again.
+- [ ] E6 After an update of the app (`adb install -r`), a reboot, and (if possible) a Fire OS update: state of the launcher.
+
 ## D. Things that should NOT work (confirm they are cleanly unavailable)
 - [ ] D1 Settings rows for Continue Watching / Now Playing / Remote Buttons / Updates say *Unavailable* with an explanation, and don't crash.
 - [ ] D2 'Free My Fire TV mode' switch is refused on Fire OS and nothing was turned off.

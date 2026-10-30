@@ -623,7 +623,12 @@ final class HomeMode {
 
     /** Safety net: our home screen crashed 3 times in a row. The home screen and the screensaver go back; the rest stays. */
     static void revertHomeNow(Context app) {
-        if (AMAZON) {   // Fire TV: Amazon's home was never replaced or turned off; just stop redirecting to ours
+        if (AMAZON) {   // Fire TV: normally Amazon's home was never turned off; if it was (FireReplace), turn it back on
+            if (FireReplace.active(app)) {
+                boolean back = FireReplace.restoreLauncherNow(app);
+                notice(app, back ? Ui.tr("Free My Fire TV's home screen crashed 3 times in a row, so Amazon's Home is back on. Turn it off again in Settings > Home Button.")
+                        : Ui.trf("Amazon's Home could not be turned back on. On a computer, run: {command}", "command", FireReplace.RESTORE_COMMAND));
+            }
             FireHome.safeMode(app);
             return;
         }

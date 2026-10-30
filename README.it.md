@@ -85,6 +85,27 @@ ADB bastino sulla tua versione di Fire OS**: lo dice solo il risultato mostrato 
   l'avevi configurata (controlla dopo l'aggiornamento).
 - Profili bambini e app a schermo intero possono comportarsi in modo diverso. Segnala cosa osservi.
 
+## Nascondere la Home di Amazon (sperimentale, facoltativo)
+
+Impostazioni > Tasto Home > **Nascondi la Home di Amazon (sperimentale)** (premi OK due volte) **spegne, senza
+rimuoverla,** la Home di Amazon (`pm disable-user com.amazon.tv.launcher` con l'ADB della TV stessa) e imposta Free My
+Fire TV come Home. Il tasto Home e l'accensione aprono solo Free My Fire TV. L'app controlla dopo; se i controlli
+falliscono rimette tutto a posto.
+
+Cosa comporta:
+- **Reversibile:** Impostazioni > Tasto Home > *Riaccendi la Home di Amazon* (o *Ripristina la Home di Amazon*), oppure da
+  un computer `adb shell pm enable com.amazon.tv.launcher`; anche disinstallare l'app restituisce la Home, se il launcher
+  è riacceso. Dopo 3 arresti in 5 minuti l'app riaccende da sola il launcher di Amazon.
+- **Le impostazioni di Amazon vivono nel suo launcher** e quindi spariscono: *Impostazioni TV* apre direttamente le pagine
+  dell'app di impostazioni di Amazon, e il cassetto ha scorciatoie per Rete, Suoni e schermo, App, Controller e Bluetooth,
+  Preferenze e Accessibilità. Impostazioni rapide, Alexa dalla Home e altro legato al launcher possono smettere di
+  funzionare. **Non verificato oltre quanto scritto in docs/DEVICE-TESTS.md.**
+- Un aggiornamento di Fire OS o un riavvio può riaccendere il launcher: allora la Home di Amazon può ricomparire.
+- Se la Home dell'app non parte e il launcher di Amazon è spento, la TV potrebbe non mostrare nulla finché non esegui il
+  comando sopra da un computer (serve la chiavetta in rete). Tieni il comando a portata di mano prima di provare.
+- Va contro la regola abituale del progetto (niente di Amazon viene spento): esiste solo perché il proprietario l'ha
+  chiesta, ed è spenta finché non la attivi.
+
 ## Ripristinare la Home di Amazon (sempre possibile)
 
 - **Dalla TV:** Impostazioni > Tasto Home > **Ripristina la Home di Amazon**. Spegne il servizio e lo toglie dai

@@ -332,7 +332,14 @@ final class HomeApps {
         items.add(shortcut(SETTINGS, "settings", Ui.tr("Home Settings"), "settings"));
         items.add(shortcut(ANDROID_SETTINGS, "tv-settings", Ui.tr("TV Settings"), "tv_settings"));
         // Fire TV: with the Home button redirected to this home screen, the way to Amazon's own is here (and in Settings).
-        if (HomeMode.AMAZON) items.add(shortcut(AMAZON_HOME, "amazon-home", Ui.tr("Amazon Home"), "home"));
+        if (HomeMode.AMAZON && !FireReplace.active(c)) items.add(shortcut(AMAZON_HOME, "amazon-home", Ui.tr("Amazon Home"), "home"));
+        // Fire TV with Amazon's launcher turned off: its settings pages, opened by name (they are in Amazon's settings app).
+        if (HomeMode.AMAZON && FireReplace.active(c)) {
+            String[][] pages = fireSettingsPages();
+            for (int i = 1; i < pages.length; i++) {
+                device(c, items, "fire-" + i, pages[i][0], "tv_settings", new Intent().setComponent(fireSettingsPage(pages[i][1])));
+            }
+        }
         // HY300 projectors (Hotack, Allwinner H713): keystone and focus live in the maker's settings app, and the
         // stock home screen was the only way to its Miracast receiver. Each shows only where the TV has it.
         // The Amlogic ones (txhd2) carry the HTC app too, but its keystone crashes there (SurfaceFlinger refuses code
@@ -344,6 +351,23 @@ final class HomeApps {
         device(c, items, "mirroring", Ui.tr("Screen Mirroring"), "cast",
                 new Intent().setComponent(new ComponentName("com.softwinner.miracastReceiver", "com.softwinner.miracastReceiver.Miracast")));
         return items;
+    }
+
+    /** Pages of Fire OS 7's settings app (com.amazon.tv.settings.v2), as the stick listed them: {label, class}. */
+    private static String[][] fireSettingsPages() {
+        return new String[][] {
+                {Ui.tr("My Fire TV"), ".tv.device.DeviceActivity"},
+                {Ui.tr("Network"), ".tv.network.NetworkActivity"},
+                {Ui.tr("Display & Sounds"), ".tv.display_sounds.DisplayAndSoundsActivity"},
+                {Ui.tr("Apps"), ".tv.applications.ApplicationsActivity"},
+                {Ui.tr("Controllers & Bluetooth"), ".tv.controllers_bluetooth_devices.ControllersAndBluetoothActivity"},
+                {Ui.tr("Preferences"), ".tv.preferences.PreferencesActivity"},
+                {Ui.tr("Accessibility"), ".tv.accessibility.AccessibilityActivity"},
+        };
+    }
+
+    private static ComponentName fireSettingsPage(String cls) {
+        return new ComponentName("com.amazon.tv.settings.v2", "com.amazon.tv.settings.v2" + cls);
     }
 
     private static void device(Context c, List<Item> items, String key, String label, String symbol, Intent intent) {
@@ -598,6 +622,9 @@ final class HomeApps {
                 // Fire OS 7.7.1.7), so its window looks like Amazon's home arriving: hold the redirect for a moment.
                 if (HomeMode.AMAZON) FireHome.pauseFor(a, FireHome.SETTINGS_PAUSE_MS);
                 intent = new Intent(Settings.ACTION_SETTINGS);
+                // Amazon's launcher turned off (FireReplace): its settings screen is gone with it; Amazon's settings app
+                // has its own pages, "My Fire TV" being the first.
+                if (HomeMode.AMAZON && FireReplace.active(a)) intent = new Intent().setComponent(fireSettingsPage(fireSettingsPages()[0][1]));
                 // Where nothing answers it, Android TV's own settings by name: on the HY300 Pro+ the stock home
                 // (com.htc.magcubicos) is the one that does, and Free My Fire TV mode turns it off (#379).
                 plain = new Intent().setComponent(new ComponentName("com.android.tv.settings", "com.android.tv.settings.MainSettings"));

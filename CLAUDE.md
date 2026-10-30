@@ -8,8 +8,11 @@ Read `README.md` and `docs/` first. Keep the person's wording simple: they may n
 
 - **Never claim the Home redirect works until it was seen on a real Fire TV.** Everything that needs a stick is listed in
   `docs/DEVICE-TESTS.md`; mark results from a stick explicitly, and keep unverified things labelled as unverified.
-- Amazon's launcher keeps the Home button. No root, no exploit, nothing irreversible, and **no `com.amazon.*` package is
-  ever disabled** (`HomeMode.AMAZON` refuses the replace-the-launcher mode; `mayTurnOff`). Never promise a permission or
+- Amazon's launcher keeps the Home button by default. No root, no exploit, nothing irreversible. **No `com.amazon.*`
+  package is disabled, with one exception the owner explicitly asked for:** the opt-in, experimental *Hide Amazon's Home*
+  (`FireReplace`: `pm disable-user` of `com.amazon.tv.launcher` through the TV's own ADB, with a double confirmation,
+  checks before and after, an automatic undo, and Restore / watchdog / manual `adb shell pm enable com.amazon.tv.launcher`
+  to bring it back). Never disable anything else (`HomeMode.AMAZON` still refuses the Google TV replace mode; `mayTurnOff`). Never promise a permission or
   ADB step is enough before its result was verified (`FireHome.setupNow` checks `checkSelfPermission`/the setting).
 - The way back must always work: Settings > Home Button > Restore Amazon Home (`FireHome.restoreNow`), double Home
   (`RedirectPolicy` escape), the Amazon Home tile, `docs`/README manual commands, uninstall.
@@ -24,6 +27,7 @@ Read `README.md` and `docs/` first. Keep the person's wording simple: they may n
 
 - `RedirectPolicy` (pure Java, unit-tested): when a window event is a Home press that should be redirected, plus the
   escape / dedupe / loop-breaker rules and the pure helpers for the `enabled_accessibility_services` setting.
+- `FireReplace`: the opt-in "Hide Amazon's Home" (see Always). `restoreLauncherNow` only re-enables what it turned off.
 - `HomeRedirectService`: accessibility service, `TYPE_WINDOW_STATE_CHANGED` only, no content, no key filter. Starts
   `FireHomeActivity` (the home screen as a normal app, `:home` process). Logs to `adb logcat -s FreeMyFireTV`.
 - `FireHome`: state files (`fire-home.json`, `fire-redirect.json`, `fire-setup.json`), guided setup (already enabled ->

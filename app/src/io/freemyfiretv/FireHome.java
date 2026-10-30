@@ -115,7 +115,7 @@ final class FireHome {
 
     /** The Home button is being redirected to us right now (the person wants it, and the service is listed). */
     static boolean redirecting(Context c) {
-        return wanted(c) && serviceEnabled(c);
+        return FireReplace.active(c) || (wanted(c) && serviceEnabled(c));
     }
 
     /** Wall-clock time until which the person asked to leave Amazon's home alone (0: not asked). */
@@ -270,8 +270,13 @@ final class FireHome {
     // MARK: - Setup (main process, from ModeJob)
 
     /** What the setup is doing now, for the settings screen (fire-setup.json "busy"). */
-    private static void step(Context c, String text) {
+    static void step(Context c, String text) {
         JSONObject o = read(c, "fire-setup.json");
+        if (text == null) {   // done: nothing is in progress any more
+            o.remove("busy");
+            write(c, "fire-setup.json", o);
+            return;
+        }
         put(o, "busy", text);
         put(o, "busyAt", SystemClock.elapsedRealtime());
         write(c, "fire-setup.json", o);
@@ -362,6 +367,10 @@ final class FireHome {
     static void restoreNow(Context app) {
         synchronized (RUN) {
             step(app, Ui.tr("Restoring…"));
+            // First Amazon's launcher, if this app turned it off: without it the redirect below would be moot.
+            if (FireReplace.active(app) && !FireReplace.restoreLauncherNow(app)) {
+                HomeMode.notice(app, Ui.trf("Amazon's Home could not be turned back on. On a computer, run: {command}", "command", FireReplace.RESTORE_COMMAND));
+            }
             setWanted(app, false);
             app.sendBroadcast(new Intent(ACTION_OFF).setPackage(HomeMode.PKG));
             for (int i = 0; i < 10 && serviceEnabled(app); i++) SystemClock.sleep(300);
@@ -425,6 +434,10 @@ final class FireHome {
         ModeJob.schedule(c, ModeJob.FIRE_SETUP, null, 0);
     }
 
+    static void requestReplace(Context c) {
+        FireReplace.requestEnable(c);
+    }
+
     static void requestRestore(Context c) {
         ModeJob.schedule(c, ModeJob.FIRE_RESTORE, null, 0);
     }
@@ -453,7 +466,8 @@ final class FireHome {
 
     /** Everything the settings screen shows about the Home button, read in one go (small files; nothing blocks). */
     static final class Snapshot {
-        boolean wanted, listed, connected, canWrite, amazonHomeFound;
+        boolean wanted, listed, connected, canWrite, amazonHomeFound, replaced;
+        String replaceError = "";
         long pausedUntil, lastRedirectAt, homeSeenAt, setupAt;
         int redirects;
         String busy = "", result = "", error = "", amazonHome = "", homeWindow = "", lastVerdict = "";
@@ -465,6 +479,7 @@ final class FireHome {
         /** The row's value. "Working" only once a redirect has really happened. */
         String summary() {
             if (!busy.isEmpty()) return busy;
+            if (replaced) return Ui.tr("Amazon's Home is off");
             if (!wanted) return Ui.tr("Off");
             if (!listed) return Ui.tr("Needs setup");
             if (!connected) return Ui.tr("Not running yet");
@@ -490,6 +505,9 @@ final class FireHome {
         s.result = setup.optString("result");
         s.error = setup.optString("error");
         s.setupAt = setup.optLong("at");
+        JSONObject rep = read(c, "fire-replace.json");
+        s.replaced = rep.optBoolean("active");
+        s.replaceError = rep.optString("error");
         long at = setup.optLong("busyAt"), now = SystemClock.elapsedRealtime();
         boolean stale = now < at || now - at > 3 * 60_000L;   // a job that died leaves its text behind
         s.busy = stale ? "" : setup.optString("busy");

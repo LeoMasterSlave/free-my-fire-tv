@@ -171,7 +171,7 @@ public class SettingsActivity extends Activity {
         private final List<String[]> shelfRows = new ArrayList<>();
         // Fire TV's Home button (FireHome): what the files say, read in poll; the layout is rebuilt only when its text changes.
         private FireHome.Snapshot fire = new FireHome.Snapshot();
-        private long fireAskedAt;
+        private long fireAskedAt, replaceArmedAt;
         private StaticLayout fireLayout;
         private String fireShown = "";
         private boolean someServicesOff;   // is a streaming service on the TV switched off in Picks from (counted when the screen opens)
@@ -515,7 +515,7 @@ public class SettingsActivity extends Activity {
                 case PICKER: return Math.min(PICK_VISIBLE, pickLabels.size());
                 case SHELF_EDIT: return Math.min(PICK_VISIBLE, shelfRows.size());
                 case POWER: return powerRows().length;
-                case FIRE_HOME: return 4;
+                case FIRE_HOME: return 5;
                 case TMDB_KEY: return keyRowIds.length;
                 case PICKS: return picksLabels().length;
                 case PICK_FROM: return Math.min(PICK_VISIBLE, services.size());
@@ -709,11 +709,12 @@ public class SettingsActivity extends Activity {
 
         private String[] fireLabels() {
             return new String[] {Ui.tr("Set up the Home button"), Ui.tr("Redirect the Home button"),
-                    Ui.tr("Open Amazon Home"), Ui.tr("Restore Amazon Home")};
+                    Ui.tr("Open Amazon Home"), Ui.tr("Restore Amazon Home"),
+                    fire.replaced ? Ui.tr("Bring Amazon's Home back") : Ui.tr("Hide Amazon's Home (experimental)")};
         }
 
         private String[] fireValues() {
-            return new String[] {fire.summary(), onOff(fire.wanted), "", ""};
+            return new String[] {fire.summary(), onOff(fire.wanted), "", "", fire.replaced ? Ui.tr("on") : Ui.tr("off")};
         }
 
         private void activateFire() {
@@ -733,11 +734,27 @@ public class SettingsActivity extends Activity {
                 case 2:
                     if (!FireHome.openAmazonHome(c)) Toast.makeText(c, Ui.tr("Couldn't open Amazon's home screen."), Toast.LENGTH_LONG).show();
                     break;
-                default:
+                case 3:
                     if (!fire.busy.isEmpty()) return;
                     fireAskedAt = SystemClock.uptimeMillis();
                     fire.busy = Ui.tr("Starting…");
                     FireHome.requestRestore(c);
+                    break;
+                default:   // 4: hide Amazon's Home (asks twice) or bring it back
+                    if (!fire.busy.isEmpty()) return;
+                    if (fire.replaced) {
+                        fireAskedAt = SystemClock.uptimeMillis();
+                        fire.busy = Ui.tr("Starting…");
+                        FireHome.requestRestore(c);
+                    } else if (SystemClock.uptimeMillis() - replaceArmedAt > 20_000 || replaceArmedAt == 0) {
+                        replaceArmedAt = SystemClock.uptimeMillis();   // first press: only the warning below
+                        fireShown = null;
+                    } else {
+                        replaceArmedAt = 0;
+                        fireAskedAt = SystemClock.uptimeMillis();
+                        fire.busy = Ui.tr("Starting…");
+                        FireHome.requestReplace(c);
+                    }
                     break;
             }
             handler.removeCallbacks(poll);
@@ -755,6 +772,13 @@ public class SettingsActivity extends Activity {
             b.append('\n').append(f.amazonHomeFound ? Ui.trf("Amazon's home screen: {name}.", "name", f.amazonHome)
                     : Ui.tr("Amazon's home screen: not found."));
             if (f.paused()) b.append('\n').append(Ui.tr("Paused for a minute: you opened Amazon's home screen."));
+            if (f.replaced) b.append('\n').append(Ui.tr("Amazon's Home is turned off (not removed): the Home button opens only Free My Fire TV."));
+            if (!f.replaceError.isEmpty()) b.append('\n').append(Ui.trf("Couldn't turn off Amazon's Home: {error}", "error", f.replaceError));
+            if (focus == 4 && !f.replaced && SystemClock.uptimeMillis() - replaceArmedAt < 20_000 && replaceArmedAt != 0) {
+                b.append("\n\n").append(Ui.tr("This turns off Amazon's Home (it isn't removed). Amazon's own settings, quick settings and Alexa from the Home screen may stop working. Press OK again within 20 seconds to continue."))
+                        .append('\n').append(Ui.trf("To undo from a computer: {command}", "command", FireReplace.RESTORE_COMMAND));
+                return b.toString();
+            }
             b.append("\n\n");
             if (!f.wanted) {
                 b.append(f.result.startsWith("restored") ? Ui.tr("Amazon's home screen is restored: the Home button works as it did before.")
