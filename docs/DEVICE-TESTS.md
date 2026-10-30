@@ -54,7 +54,8 @@ nothing newer than API 28). The full APK build is first run by GitHub Actions.
 - [ ] C3 `adb uninstall io.freemyfiretv` leaves the stick as before (no accessibility entry, Home is Amazon's).
 - [ ] C4 No `com.amazon.*` package was disabled: `adb shell pm list packages -d` is unchanged.
 
-## E. Hide Amazon's Home (0.2.0, experimental): all untested
+## E. Hide Amazon's Home (0.2.0, experimental)
+Known on Fire OS 7.7.1.7: `pm enable com.amazon.tv.launcher` -> `Cannot disable a protected package`. E1 is expected to fail there; the rest is for other versions.
 - [ ] E1 Settings > Home Button > Hide Amazon's Home: after two OKs, does it end with "Amazon's Home is off"? What does
   `adb shell pm list packages -d` show, and `adb shell cmd package resolve-activity --brief -a android.intent.action.MAIN -c android.intent.category.HOME`?
 - [ ] E2 Press Home from an app: our home opens at once, Amazon's never shows.

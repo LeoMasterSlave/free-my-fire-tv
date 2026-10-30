@@ -85,6 +85,10 @@ is not guaranteed**; that is verified only by the result shown on the TV.
 
 ## Hide Amazon's Home (experimental, optional)
 
+> **Result on a real stick:** on Fire OS 7.7.1.7 Android refuses to change Amazon's launcher at all
+> (`Cannot disable a protected package: com.amazon.tv.launcher`, seen with `pm enable`), so this option is expected to
+> fail there with a clear message and change nothing. It is kept for other Fire OS versions, untested.
+
 Settings > Home Button > **Hide Amazon's Home (experimental)** (press OK twice) turns Amazon's launcher **off, not
 removed** (`pm disable-user com.amazon.tv.launcher` through the TV's own ADB) and makes Free My Fire TV the Home. The Home
 button and power-on then open only Free My Fire TV. Checked afterwards; if the checks fail everything is put back.

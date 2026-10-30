@@ -87,6 +87,10 @@ ADB bastino sulla tua versione di Fire OS**: lo dice solo il risultato mostrato 
 
 ## Nascondere la Home di Amazon (sperimentale, facoltativo)
 
+> **Risultato su una chiavetta vera:** su Fire OS 7.7.1.7 Android rifiuta qualsiasi modifica al launcher di Amazon
+> (`Cannot disable a protected package: com.amazon.tv.launcher`, visto con `pm enable`), quindi questa opzione dovrebbe
+> fallire lì con un messaggio chiaro, senza cambiare nulla. Resta per altre versioni di Fire OS, non provate.
+
 Impostazioni > Tasto Home > **Nascondi la Home di Amazon (sperimentale)** (premi OK due volte) **spegne, senza
 rimuoverla,** la Home di Amazon (`pm disable-user com.amazon.tv.launcher` con l'ADB della TV stessa) e imposta Free My
 Fire TV come Home. Il tasto Home e l'accensione aprono solo Free My Fire TV. L'app controlla dopo; se i controlli

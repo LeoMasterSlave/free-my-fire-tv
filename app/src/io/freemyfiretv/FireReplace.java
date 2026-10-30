@@ -90,6 +90,11 @@ final class FireReplace {
                 FireHome.step(app, Ui.tr("Turning off Amazon's Home…"));
                 String off = adb.shell("pm disable-user --user 0 " + LAUNCHER);
                 AppLog.w("pm disable-user " + LAUNCHER + ": " + off.trim());
+                if (off.contains("protected package") || off.contains("SecurityException")) {
+                    // Fire OS 7.7.1.7 refuses to change this package at all ("Cannot disable a protected package").
+                    undo(adb, app, original);
+                    throw new IOException(Ui.tr("Fire OS protects Amazon's launcher: it can't be turned off on this TV. Nothing was changed."));
+                }
                 // 4. Checked, not assumed: it is off, and Home now opens us. Otherwise everything goes back.
                 FireHome.step(app, Ui.tr("Checking that Free My Fire TV is the Home…"));
                 String now = homeNow(adb);

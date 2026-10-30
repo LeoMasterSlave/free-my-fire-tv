@@ -48,7 +48,9 @@ Facts below are marked **checked** (done here, no device needed) or **assumed** 
 "Success"), writes the way back to `fire-replace.json`, `pm disable-user --user 0 com.amazon.tv.launcher`, then checks
 that the launcher is listed disabled (`pm list packages -d`) and that HOME resolves to this app, else undoes everything.
 Undo = `pm enable` + `set-home-activity <recorded original home>`. Amazon's settings pages are listed from the stick's
-own dump of `com.amazon.tv.settings.v2` (DeviceActivity, NetworkActivity, ...). **Not yet tried on a stick.**
+own dump of `com.amazon.tv.settings.v2` (DeviceActivity, NetworkActivity, ...). **Observed on Fire OS 7.7.1.7:** `pm enable com.amazon.tv.launcher` answers `SecurityException: Cannot disable a protected
+package` (PackageManagerService.setEnabledSetting): the launcher is protected, so turning it off is expected to fail there.
+The full feature has not been run on a stick.
 
 ## Differences from Android TV (Free My TV)
 - No "replace the home screen" mode, no disabling apps, no Continue Watching (needs the TV's ADB), no Now Playing listener,
