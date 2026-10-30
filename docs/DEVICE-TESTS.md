@@ -62,6 +62,20 @@ nothing newer than API 28). The full APK build is first run by GitHub Actions.
 Known (Fire OS 7.7.1.7): `cmd package set-home-activity io.freemyfiretv/.HomeActivity` is accepted, and Amazon's home still
 shows first when Home is pressed.
 
+## G. Remove extra Amazon apps (0.3.1, experimental): untested
+- [ ] G1 Settings > Home Button > Remove extra Amazon apps: does the list show real package names (or app names) found
+  on this TV? Does it match `adb shell pm list packages com.amazon`, minus the launcher, Appstore, settings and OTA?
+- [ ] G2 OK on one entry: does it turn off (`pm list packages -d` includes it) and does the row say "off"? Press OK
+  again: does `pm enable` bring it back, with the row saying "on"?
+- [ ] G3 Try one obviously unimportant package first (not Alexa, not anything voice- or remote-related) and check
+  nothing else broke (home screen, redirect, settings) before trying others.
+- [ ] G4 Any package the TV also refuses ("protected package" or similar): does the row stay "on" and the screen show
+  the error, with nothing changed?
+- [ ] G5 Settings > Home Button > direct shortcuts (My Fire TV, Network, Display & Sounds, Apps, Controllers &
+  Bluetooth, Preferences, Accessibility, from the bottom drawer, 0.3.1): does each one open Amazon's real settings
+  page, or does Fire OS refuse a non-Amazon app opening them (then the shortcut should silently fall back to the
+  normal TV Settings grid instead - does it)?
+
 ## E. Hide Amazon's Home (0.2.0, experimental)
 Known on Fire OS 7.7.1.7: `pm enable com.amazon.tv.launcher` -> `Cannot disable a protected package`. Also `adb shell pm hide com.amazon.tv.launcher` -> `SecurityException: Neither user 2000 nor current process has android.permission.MANAGE_USERS` (seen on a stick; nothing changed). So without root there is no way to remove Amazon's Home on this version. E1 is expected to fail there; the rest is for other versions.
 - [ ] E1 Settings > Home Button > Hide Amazon's Home: after two OKs, does it end with "Amazon's Home is off"? What does

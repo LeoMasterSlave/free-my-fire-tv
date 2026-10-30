@@ -150,7 +150,7 @@ public class SettingsActivity extends Activity {
 
     static final class SettingsView extends View implements Choreographer.FrameCallback {
         private static final int MAIN = 0, HOME_CHOICE = 1, HOME_SETTINGS = 2, REMOTE_KEYS = 3, PICKER = 4, SHELF_EDIT = 5,
-                POWER = 6, TMDB_KEY = 7, PICKS = 8, PICK_FROM = 9, WATCH_APPS = 10, FIRE_HOME = 11;
+                POWER = 6, TMDB_KEY = 7, PICKS = 8, PICK_FROM = 9, WATCH_APPS = 10, FIRE_HOME = 11, DEBLOAT = 12;
         private static final float LIST_ROW_H = 68, LIST_ROW_GAP = 6;
         private static final int PICK_VISIBLE = 9;
         private static final float LIST_X = 1000, LIST_R = 1824, LIST_TOP = 186, ROW_GAP = 8, CHOICE_H = 104;
@@ -205,6 +205,11 @@ public class SettingsActivity extends Activity {
         // Continue Watching apps: {package, name}, null until the background scan is done; hidden items when opened.
         private List<String[]> watchApps;
         private int watchScan, watchHiddenCount;
+        // Remove extra Amazon apps (FireDebloat): package names found on this TV, null until the background scan is
+        // done; the row mid-toggle (if any) and when it was asked, to time out a stuck ADB connection.
+        private List<String> debloatApps;
+        private int debloatScan;
+        private String debloatBusyPkg = "";
         private final RectF tmp = new RectF(), rowRect = new RectF(), focusBox = new RectF();
         private JSONObject state = new JSONObject(), recs = new JSONObject();
         private boolean hasKey;
@@ -240,6 +245,9 @@ public class SettingsActivity extends Activity {
                     // Asked a moment ago and the job hasn't written its first step yet: say it started.
                     if (fire.busy.isEmpty() && SystemClock.uptimeMillis() - fireAskedAt < 4000) fire.busy = Ui.tr("Starting…");
                 }
+                // A package's toggle writes to the same "busy" text as Set up/Restore/Hide Amazon's Home (FireHome.step):
+                // once that empties, the job is done, same as those.
+                if (!debloatBusyPkg.isEmpty() && fire.busy.isEmpty()) debloatBusyPkg = "";
                 if (screen == HOME_SETTINGS && pickScroll + focus == updatesRow() && !updatesWas.equals(updatesValue())) {
                     spoken.focusMoved();   // TalkBack reads the Updates row's new value
                 }
@@ -380,6 +388,13 @@ public class SettingsActivity extends Activity {
                     String[] labels = fireLabels(), values = fireValues();
                     return row >= labels.length ? "" : values[row].isEmpty() ? labels[row] : labels[row] + ", " + values[row];
                 }
+                case DEBLOAT: {
+                    int at = pickScroll + row;
+                    if (debloatApps == null || at >= debloatSize()) return "";
+                    String pkg = debloatApps.get(at);
+                    return FireDebloat.label(getContext(), pkg) + ", " + onOff(!FireDebloat.isOff(getContext(), pkg)) + ", "
+                            + Ui.trf("{i} of {n}", "i", at + 1, "n", debloatApps.size());
+                }
                 case TMDB_KEY:
                     if (row >= keyRowIds.length) return "";
                     // TalkBack can't see the drawn text: the first row also says what the key is for and how to get one.
@@ -515,11 +530,12 @@ public class SettingsActivity extends Activity {
                 case PICKER: return Math.min(PICK_VISIBLE, pickLabels.size());
                 case SHELF_EDIT: return Math.min(PICK_VISIBLE, shelfRows.size());
                 case POWER: return powerRows().length;
-                case FIRE_HOME: return 6;
+                case FIRE_HOME: return 7;
                 case TMDB_KEY: return keyRowIds.length;
                 case PICKS: return picksLabels().length;
                 case PICK_FROM: return Math.min(PICK_VISIBLE, services.size());
                 case WATCH_APPS: return Math.min(PICK_VISIBLE, listSize());
+                case DEBLOAT: return Math.min(PICK_VISIBLE, debloatSize());
                 default: return Prefs.KEYS.length;
             }
         }
@@ -553,6 +569,7 @@ public class SettingsActivity extends Activity {
             else if (screen == PICK_FROM) drawServices(c);
             else if (screen == WATCH_APPS) drawWatchApps(c);
             else if (screen == FIRE_HOME) drawFireHome(c);
+            else if (screen == DEBLOAT) drawDebloat(c);
             else drawList(c);
         }
 
@@ -710,11 +727,22 @@ public class SettingsActivity extends Activity {
         private String[] fireLabels() {
             return new String[] {Ui.tr("Set up the Home button"), Ui.tr("Redirect the Home button"),
                     Ui.tr("Open Amazon Home"), Ui.tr("Restore Amazon Home"), Ui.tr("Cover Amazon's Home while switching"),
-                    fire.replaced ? Ui.tr("Bring Amazon's Home back") : Ui.tr("Hide Amazon's Home (experimental)")};
+                    fire.replaced ? Ui.tr("Bring Amazon's Home back") : Ui.tr("Hide Amazon's Home (experimental)"),
+                    Ui.tr("Remove extra Amazon apps (experimental)")};
         }
 
         private String[] fireValues() {
-            return new String[] {fire.summary(), onOff(fire.wanted), "", "", onOff(fire.cover), fire.replaced ? Ui.tr("on") : Ui.tr("off")};
+            return new String[] {fire.summary(), onOff(fire.wanted), "", "", onOff(fire.cover), fire.replaced ? Ui.tr("on") : Ui.tr("off"),
+                    debloatCount()};
+        }
+
+        /** "3 off", once the background scan has run; blank before that (drawn once the screen opens). */
+        private String debloatCount() {
+            if (debloatApps == null) return "";
+            Set<String> off = FireDebloat.disabled(getContext());
+            int n = 0;
+            for (String pkg : debloatApps) if (off.contains(pkg)) n++;
+            return n == 0 ? Ui.tr("none off") : Ui.trf("{n} off", "n", n);
         }
 
         private void activateFire() {
@@ -743,6 +771,9 @@ public class SettingsActivity extends Activity {
                 case 4:
                     FireHome.setCover(c, !fire.cover);
                     fire = FireHome.snapshot(c, true);
+                    break;
+                case 6:
+                    openDebloat();
                     break;
                 default:   // 5: hide Amazon's Home (asks twice) or bring it back
                     if (!fire.busy.isEmpty()) return;
@@ -1049,6 +1080,10 @@ public class SettingsActivity extends Activity {
                                 focus = WATCH_ROW;   // on the list's first screen
                                 pickScroll = 0;
                                 screen = HOME_SETTINGS;
+                            } else if (screen == DEBLOAT) {
+                                focus = 6;   // "Remove extra Amazon apps", on the Home Button screen
+                                pickScroll = 0;
+                                screen = FIRE_HOME;
                             } else {
                                 focus = screen == HOME_SETTINGS ? 2 : screen == SHELF_EDIT ? (editingTop ? 4 : 3)
                                         : screen == REMOTE_KEYS ? 5 : screen == POWER ? 6 : 0;
@@ -1966,11 +2001,12 @@ public class SettingsActivity extends Activity {
         }
 
         private boolean scrolling() {
-            return screen == PICKER || screen == SHELF_EDIT || screen == HOME_SETTINGS || screen == PICK_FROM || screen == WATCH_APPS;
+            return screen == PICKER || screen == SHELF_EDIT || screen == HOME_SETTINGS || screen == PICK_FROM || screen == WATCH_APPS || screen == DEBLOAT;
         }
 
         private int listSize() {
             if (screen == WATCH_APPS) return watchApps == null ? 0 : watchApps.size() + (watchHiddenCount > 0 ? 1 : 0);
+            if (screen == DEBLOAT) return debloatSize();
             return screen == SHELF_EDIT ? shelfRows.size() : screen == HOME_SETTINGS ? settingLabels().length : screen == PICK_FROM ? services.size() : pickLabels.size();
         }
 
@@ -2037,6 +2073,83 @@ public class SettingsActivity extends Activity {
 
         private String hiddenLabel() {
             return Ui.trf("Show hidden items ({n})", "n", watchHiddenCount);
+        }
+
+        // MARK: - Remove extra Amazon apps (FireDebloat)
+
+        /** Looks for Amazon packages on this TV, in the background (reading every installed app can take a moment). */
+        private void scanDebloatApps() {
+            final int scan = ++debloatScan;
+            final Context c = getContext().getApplicationContext();
+            new Thread(() -> {
+                final List<String> found = FireDebloat.candidates(c);
+                handler.post(() -> {
+                    if (scan != debloatScan) return;
+                    debloatApps = found;
+                    if (screen == DEBLOAT) spoken.focusMoved();
+                    invalidate();
+                });
+            }, "fire-debloat-scan").start();
+        }
+
+        private void openDebloat() {
+            pickScroll = 0;
+            focus = 0;
+            debloatBusyPkg = "";
+            screen = DEBLOAT;
+            if (debloatApps == null) scanDebloatApps();
+        }
+
+        private int debloatSize() {
+            return debloatApps == null ? 0 : debloatApps.size();
+        }
+
+        /** OK: a package off or back on. One at a time; a second press while it's mid-toggle is ignored. */
+        private void toggleDebloatApp() {
+            int at = pickScroll + focus;
+            if (debloatApps == null || at >= debloatSize() || !debloatBusyPkg.isEmpty()) return;
+            Context c = getContext();
+            String pkg = debloatApps.get(at);
+            boolean off = FireDebloat.isOff(c, pkg);
+            debloatBusyPkg = pkg;
+            fireAskedAt = SystemClock.uptimeMillis();   // shares FireHome's "just asked" grace (same busy file)
+            FireDebloat.requestToggle(c, pkg, !off);
+            handler.removeCallbacks(poll);
+            handler.postDelayed(poll, 400);
+            spoken.focusMoved();
+        }
+
+        private void drawDebloat(Canvas c) {
+            Paint heading = Ui.text(Ui.displaySemibold, 34 * k, 0xFFFFFFFF);
+            c.drawText(Ui.tr("Remove extra Amazon apps"), LIST_X * k + 30 * k, (LIST_TOP - 24) * k, heading);
+            Paint hint = Ui.text(Ui.regular, 23 * k, 0x8CFFFFFF);
+            if (debloatApps == null || debloatApps.isEmpty()) {
+                c.drawText(debloatApps == null ? Ui.tr("Looking for Amazon apps on this TV…")
+                        : Ui.tr("Nothing extra was found to remove."), LIST_X * k + 30 * k, (LIST_TOP + 56) * k, hint);
+                return;
+            }
+            Set<String> off = FireDebloat.disabled(getContext());
+            int rows = rowCount();
+            for (int i = 0; i < rows; i++) {
+                int at = pickScroll + i;
+                String pkg = debloatApps.get(at);
+                boolean busy = pkg.equals(debloatBusyPkg);
+                boolean on = !off.contains(pkg);
+                float y = (LIST_TOP + 20 + i * (LIST_ROW_H + LIST_ROW_GAP)) * k;
+                rowRect.set(LIST_X * k, y, LIST_R * k, y + LIST_ROW_H * k);
+                float f = drawRowBackground(c, i);
+                rowLabel.setColor(blend(on ? 0xF2FFFFFF : 0x80FFFFFF, on ? INK : 0x801C1C1E, f));
+                rowValue.setColor(blend(0xB3FFFFFF, 0xB31C1C1E, f));
+                float base = rowRect.centerY() + Ui.halfCap(rowLabel);
+                String label = FireDebloat.label(getContext(), pkg);
+                c.drawText(TextUtils.ellipsize(label, new TextPaint(rowLabel), 560 * k, TextUtils.TruncateAt.END).toString(), rowRect.left + 30 * k, base, rowLabel);
+                c.drawText(busy ? "…" : onOff(on), rowRect.right - 30 * k, base, rowValue);
+            }
+            String error = FireDebloat.lastError(getContext());
+            float hy = (LIST_TOP + 20 + rows * (LIST_ROW_H + LIST_ROW_GAP) + 36) * k;
+            String text = !error.isEmpty() ? Ui.trf("Couldn't change it: {error}", "error", error)
+                    : Ui.tr("OK turns an app off (not removed) or back on. Nothing is removed, and pm enable always undoes it.");
+            c.drawText(TextUtils.ellipsize(text, notice, 1550 * k, TextUtils.TruncateAt.END).toString(), LIST_X * k + 30 * k, hy, hint);
         }
 
         private void openWatchApps() {
@@ -2406,6 +2519,10 @@ public class SettingsActivity extends Activity {
                 toggleWatchApp();
                 invalidate();
                 return;
+            } else if (screen == DEBLOAT) {
+                toggleDebloatApp();
+                invalidate();
+                return;
             } else if (screen == HOME_SETTINGS && pickScroll + focus == WATCH_ROW) {
                 if (watchLocked()) return;
                 openWatchApps();
@@ -2464,6 +2581,7 @@ public class SettingsActivity extends Activity {
                 screen = FIRE_HOME;
                 focus = 0;
                 fire = FireHome.snapshot(c, true);
+                scanDebloatApps();
             } else if (focus == 0) {
                 if (busy()) return;
                 screen = HOME_CHOICE;

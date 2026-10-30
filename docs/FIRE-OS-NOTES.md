@@ -58,6 +58,17 @@ own dump of `com.amazon.tv.settings.v2` (DeviceActivity, NetworkActivity, ...). 
 package` (PackageManagerService.setEnabledSetting): the launcher is protected, so turning it off is expected to fail there.
 The full feature has not been run on a stick.
 
+## Remove extra Amazon apps (0.3.1)
+`FireDebloat`: a per-package `pm disable-user --user 0 <pkg>` / `pm enable <pkg>` through the TV's own ADB (same
+mechanism as `FireReplace`, one package at a time, from Settings > Home Button > Remove extra Amazon apps). The list
+offered is read from the TV itself (`PackageManager.getInstalledApplications`, every `com.amazon.*` package found,
+minus a short deny-list: the launcher, the Appstore, settings, OTA updater, and a few others the app or the system
+depends on) rather than copied from a debloat guide, since such guides are often written for an older device or Fire
+OS version. Nothing is assumed safe: the person sees the real package name (and its app label, when Android has one)
+and decides. State is in `fire-debloat.json` (the set of packages this app turned off); only those are ever offered
+`pm enable` back. **Not yet tried on a stick: whether disabling a given package breaks something else on this Fire OS
+version is unknown until tested, one package at a time.**
+
 ## Differences from Android TV (Free My TV)
 - No "replace the home screen" mode, no disabling apps, no Continue Watching (needs the TV's ADB), no Now Playing listener,
   no remote-button service, no self-updater. Those rows show *Unavailable*.
