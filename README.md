@@ -83,6 +83,14 @@ is not guaranteed**; that is verified only by the result shown on the TV.
   and you had set it up (check after updating).
 - Profiles/kids profiles, and apps that cover the screen, may behave differently. Report what you see.
 
+## Covering Amazon's home (0.3.0, untested)
+
+Amazon's launcher cannot be switched off or replaced on Fire OS 7.7.1.7 (see below; setting this app as the default Home
+is accepted but Amazon still shows first). Instead, **Settings > Home Button > Cover Amazon's Home while switching** (on by
+default) puts a black screen over the screen the moment Amazon's home arrives, and takes it down when Free My Fire TV is
+up (at most 4 seconds, never takes keys). It hides the flash, it doesn't remove it: the redirect still starts after
+Amazon's home appears. Pressing Home twice still goes to Amazon's home.
+
 ## Hide Amazon's Home (experimental, optional)
 
 > **Result on a real stick:** on Fire OS 7.7.1.7 Android refuses to change Amazon's launcher at all

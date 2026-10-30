@@ -123,6 +123,17 @@ final class FireHome {
         return read(c, "fire-home.json").optLong("pausedUntil", 0);
     }
 
+    /** Whether Amazon's home is covered while ours opens (on unless the person turned it off). */
+    static boolean coverWanted(Context c) {
+        return read(c, "fire-home.json").optBoolean("cover", true);
+    }
+
+    static void setCover(Context c, boolean on) {
+        JSONObject o = read(c, "fire-home.json");
+        put(o, "cover", on);
+        write(c, "fire-home.json", o);
+    }
+
     /** How long the redirect waits while Amazon's settings open (they live inside Amazon's launcher). */
     static final long SETTINGS_PAUSE_MS = 15_000;
 
@@ -466,7 +477,7 @@ final class FireHome {
 
     /** Everything the settings screen shows about the Home button, read in one go (small files; nothing blocks). */
     static final class Snapshot {
-        boolean wanted, listed, connected, canWrite, amazonHomeFound, replaced;
+        boolean wanted, listed, connected, canWrite, amazonHomeFound, replaced, cover;
         String replaceError = "";
         long pausedUntil, lastRedirectAt, homeSeenAt, setupAt;
         int redirects;
@@ -507,6 +518,7 @@ final class FireHome {
         s.setupAt = setup.optLong("at");
         JSONObject rep = read(c, "fire-replace.json");
         s.replaced = rep.optBoolean("active");
+        s.cover = home.optBoolean("cover", true);
         s.replaceError = rep.optString("error");
         long at = setup.optLong("busyAt"), now = SystemClock.elapsedRealtime();
         boolean stale = now < at || now - at > 3 * 60_000L;   // a job that died leaves its text behind

@@ -43,6 +43,12 @@ Facts below are marked **checked** (done here, no device needed) or **assumed** 
 - The stick has no tuner and no HDMI inputs (the owner uses it on a monitor): the Live TV and HDMI Inputs buttons are hidden when there is no tuner input and no HDMI input (`HomeApps.liveTv`, `topButtons`). Amazon's Live TV app is installed anyway, so its presence is not a test.
 - Installed settings packages include `com.amazon.tv.settings.v2` and a stub `com.android.settings`.
 
+## Cover (0.3.0)
+`HomeRedirectService` adds a full-screen black `TYPE_ACCESSIBILITY_OVERLAY` window (not focusable, not touchable) when the
+verdict is REDIRECT, and removes it 250 ms after our home activity's window appears, after 4 s at most, or when the
+redirect is cancelled (escape, pause, loop breaker). Events of our own overlay are ignored so they aren't read as our home.
+**Not yet tried on a stick.**
+
 ## Hide Amazon's Home (0.2.0)
 `FireReplace` runs, through the TV's own ADB: `cmd package set-home-activity io.freemyfiretv/.HomeActivity` (must answer
 "Success"), writes the way back to `fire-replace.json`, `pm disable-user --user 0 com.amazon.tv.launcher`, then checks

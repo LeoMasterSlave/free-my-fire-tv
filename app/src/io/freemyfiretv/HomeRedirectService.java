@@ -6,6 +6,11 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.PixelFormat;
+import android.os.Handler;
+import android.os.Looper;
+import android.view.View;
+import android.view.WindowManager;
 import android.view.accessibility.AccessibilityEvent;
 
 import java.util.Collections;
@@ -26,6 +31,17 @@ public class HomeRedirectService extends AccessibilityService {
     private long homesAt;
     private boolean receiving;
 
+    // The cover: a black accessibility overlay put up the moment Amazon's home arrives, so it is never seen, and taken
+    // down when our home shows (or after COVER_MAX_MS, or when the redirect is cancelled). It never takes keys or focus.
+    private static final long COVER_MAX_MS = 4_000, COVER_SETTLE_MS = 250;
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private final Runnable hide = new Runnable() {
+        @Override public void run() {
+            hideCover();
+        }
+    };
+    private View cover;
+
     private final BroadcastReceiver off = new BroadcastReceiver() {
         @Override public void onReceive(Context context, Intent intent) {
             AppLog.w("Home button service: switching itself off");
@@ -44,7 +60,40 @@ public class HomeRedirectService extends AccessibilityService {
         bootStart();
     }
 
+    private void showCover() {
+        handler.removeCallbacks(hide);
+        if (cover == null) {
+            try {
+                View v = new View(this);
+                v.setBackgroundColor(0xFF000000);
+                WindowManager.LayoutParams p = new WindowManager.LayoutParams(
+                        WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT,
+                        WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
+                        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+                                | WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                        PixelFormat.OPAQUE);
+                getSystemService(WindowManager.class).addView(v, p);
+                cover = v;
+            } catch (RuntimeException e) {
+                AppLog.w("couldn't cover Amazon's home: " + e);
+                return;
+            }
+        }
+        handler.postDelayed(hide, COVER_MAX_MS);
+    }
+
+    private void hideCover() {
+        handler.removeCallbacks(hide);
+        if (cover == null) return;
+        try {
+            getSystemService(WindowManager.class).removeView(cover);
+        } catch (RuntimeException ignored) {
+        }
+        cover = null;
+    }
+
     @Override public boolean onUnbind(Intent intent) {
+        hideCover();
         FireHome.noteConnected(this, false);
         unregister();
         AppLog.w("Home button service disconnected");
@@ -52,6 +101,7 @@ public class HomeRedirectService extends AccessibilityService {
     }
 
     @Override public void onDestroy() {
+        hideCover();
         unregister();
         super.onDestroy();
     }
@@ -102,19 +152,28 @@ public class HomeRedirectService extends AccessibilityService {
         }
         boolean amazonHome = FireHome.isAmazonHome(homes, pkg, cls);
         boolean ours = pkg.equals(getPackageName());
+        // Our own cover is a window of ours too, but not an activity: it must not count as our home showing.
+        if (ours && (cls == null || !cls.toString().startsWith(getPackageName()))) return;
         RedirectPolicy.Kind kind = FireHome.kindOf(pkg, cls, amazonHome);
         RedirectPolicy.Verdict verdict = policy.onWindow(now, pkg, amazonHome, ours, FireHome.wanted(this),
                 FireHome.userPausedUntil(this), kind);
+        if (ours && cover != null) {   // our home is up: take the cover down once it has drawn
+            handler.removeCallbacks(hide);
+            handler.postDelayed(hide, COVER_SETTLE_MS);
+        }
         if (verdict == RedirectPolicy.Verdict.IGNORE) return;
+        if (verdict != RedirectPolicy.Verdict.REDIRECT && verdict != RedirectPolicy.Verdict.WAITING) hideCover();
 
         boolean go = verdict == RedirectPolicy.Verdict.REDIRECT;
         AppLog.w("Amazon home arrived (" + pkg + "/" + cls + "): " + verdict);   // what to look for in logcat, on a real TV
         if (go) {
+            if (FireHome.coverWanted(this)) showCover();
             try {
                 startActivity(new Intent(this, FireHomeActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             } catch (RuntimeException e) {   // ActivityNotFound, or Android refusing a start from the background
                 AppLog.w("couldn't start Free My Fire TV's home screen: " + e);
                 go = false;
+                hideCover();
             }
         }
         FireHome.noteHomeSeen(this, pkg, String.valueOf(cls), go ? verdict.name() : verdict.name() + " (not started)", go);

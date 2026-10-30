@@ -54,6 +54,14 @@ nothing newer than API 28). The full APK build is first run by GitHub Actions.
 - [ ] C3 `adb uninstall io.freemyfiretv` leaves the stick as before (no accessibility entry, Home is Amazon's).
 - [ ] C4 No `com.amazon.*` package was disabled: `adb shell pm list packages -d` is unchanged.
 
+## F. Cover (0.3.0): untested
+- [ ] F1 Home from an app: a black screen replaces the flash of Amazon's home, then our home shows (how long is the black?).
+- [ ] F2 If our home doesn't come up, the black screen goes away by itself after about 4 s.
+- [ ] F3 Double Home: the black screen is taken down at once and Amazon's home stays.
+- [ ] F4 Turn the option off in Settings > Home Button: no black screen.
+Known (Fire OS 7.7.1.7): `cmd package set-home-activity io.freemyfiretv/.HomeActivity` is accepted, and Amazon's home still
+shows first when Home is pressed.
+
 ## E. Hide Amazon's Home (0.2.0, experimental)
 Known on Fire OS 7.7.1.7: `pm enable com.amazon.tv.launcher` -> `Cannot disable a protected package`. E1 is expected to fail there; the rest is for other versions.
 - [ ] E1 Settings > Home Button > Hide Amazon's Home: after two OKs, does it end with "Amazon's Home is off"? What does

@@ -515,7 +515,7 @@ public class SettingsActivity extends Activity {
                 case PICKER: return Math.min(PICK_VISIBLE, pickLabels.size());
                 case SHELF_EDIT: return Math.min(PICK_VISIBLE, shelfRows.size());
                 case POWER: return powerRows().length;
-                case FIRE_HOME: return 5;
+                case FIRE_HOME: return 6;
                 case TMDB_KEY: return keyRowIds.length;
                 case PICKS: return picksLabels().length;
                 case PICK_FROM: return Math.min(PICK_VISIBLE, services.size());
@@ -709,12 +709,12 @@ public class SettingsActivity extends Activity {
 
         private String[] fireLabels() {
             return new String[] {Ui.tr("Set up the Home button"), Ui.tr("Redirect the Home button"),
-                    Ui.tr("Open Amazon Home"), Ui.tr("Restore Amazon Home"),
+                    Ui.tr("Open Amazon Home"), Ui.tr("Restore Amazon Home"), Ui.tr("Cover Amazon's Home while switching"),
                     fire.replaced ? Ui.tr("Bring Amazon's Home back") : Ui.tr("Hide Amazon's Home (experimental)")};
         }
 
         private String[] fireValues() {
-            return new String[] {fire.summary(), onOff(fire.wanted), "", "", fire.replaced ? Ui.tr("on") : Ui.tr("off")};
+            return new String[] {fire.summary(), onOff(fire.wanted), "", "", onOff(fire.cover), fire.replaced ? Ui.tr("on") : Ui.tr("off")};
         }
 
         private void activateFire() {
@@ -740,7 +740,11 @@ public class SettingsActivity extends Activity {
                     fire.busy = Ui.tr("Starting…");
                     FireHome.requestRestore(c);
                     break;
-                default:   // 4: hide Amazon's Home (asks twice) or bring it back
+                case 4:
+                    FireHome.setCover(c, !fire.cover);
+                    fire = FireHome.snapshot(c, true);
+                    break;
+                default:   // 5: hide Amazon's Home (asks twice) or bring it back
                     if (!fire.busy.isEmpty()) return;
                     if (fire.replaced) {
                         fireAskedAt = SystemClock.uptimeMillis();
@@ -774,7 +778,7 @@ public class SettingsActivity extends Activity {
             if (f.paused()) b.append('\n').append(Ui.tr("Paused for a minute: you opened Amazon's home screen."));
             if (f.replaced) b.append('\n').append(Ui.tr("Amazon's Home is turned off (not removed): the Home button opens only Free My Fire TV."));
             if (!f.replaceError.isEmpty()) b.append('\n').append(Ui.trf("Couldn't turn off Amazon's Home: {error}", "error", f.replaceError));
-            if (focus == 4 && !f.replaced && SystemClock.uptimeMillis() - replaceArmedAt < 20_000 && replaceArmedAt != 0) {
+            if (focus == 5 && !f.replaced && SystemClock.uptimeMillis() - replaceArmedAt < 20_000 && replaceArmedAt != 0) {
                 b.append("\n\n").append(Ui.tr("This turns off Amazon's Home (it isn't removed). Amazon's own settings, quick settings and Alexa from the Home screen may stop working. Press OK again within 20 seconds to continue."))
                         .append('\n').append(Ui.trf("To undo from a computer: {command}", "command", FireReplace.RESTORE_COMMAND));
                 return b.toString();

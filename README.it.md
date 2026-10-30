@@ -85,6 +85,15 @@ ADB bastino sulla tua versione di Fire OS**: lo dice solo il risultato mostrato 
   l'avevi configurata (controlla dopo l'aggiornamento).
 - Profili bambini e app a schermo intero possono comportarsi in modo diverso. Segnala cosa osservi.
 
+## Coprire la Home di Amazon (0.3.0, non provato)
+
+Il launcher di Amazon non si può spegnere né sostituire su Fire OS 7.7.1.7 (vedi sotto; impostare quest'app come Home
+predefinita viene accettato ma Amazon si vede comunque per primo). Allora **Impostazioni > Tasto Home > Copri la Home di
+Amazon durante il passaggio** (attivo di default) mette una schermata nera sopra lo schermo appena arriva la Home di
+Amazon e la toglie quando Free My Fire TV è pronta (al massimo 4 secondi, non prende i tasti). Nasconde il lampo, non lo
+elimina: il reindirizzamento parte comunque dopo che la Home di Amazon è comparsa. Premere Home due volte porta ancora
+alla Home di Amazon.
+
 ## Nascondere la Home di Amazon (sperimentale, facoltativo)
 
 > **Risultato su una chiavetta vera:** su Fire OS 7.7.1.7 Android rifiuta qualsiasi modifica al launcher di Amazon
